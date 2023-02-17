@@ -1,4 +1,5 @@
 # 这是学习ctf所总结的一些笔记，按心情更新
+博客链接：http://www.bmth666.cn/bmth_blog/
 
 [ATT-CK红队评估实战靶场](https://github.com/bmth666/bmth_notes/blob/main/ATT-CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E5%AE%9E%E6%88%98%E9%9D%B6%E5%9C%BA.md)
 
