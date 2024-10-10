@@ -1,14 +1,15 @@
 title: Weblogic反序列化漏洞
 author: bmth
 tags:
-  - weblogic
+  - Weblogic
 categories:
-  - java
+  - 漏洞分析
 top_img: 'https://img-blog.csdnimg.cn/3ee3fa52cd0442e9a750f973cb4cf303.png'
 cover: 'https://img-blog.csdnimg.cn/3ee3fa52cd0442e9a750f973cb4cf303.png'
 date: 2022-12-23 14:42:00
 ---
 ![](https://img-blog.csdnimg.cn/3ee3fa52cd0442e9a750f973cb4cf303.png)
+
 还是觉得得研究一下weblogic反序列化漏洞，只会用工具太脚本小子了，我们来看看weblogic是如何造成反序列化漏洞的
 
 WebLogic是美国Oracle公司出品的一个application server，确切的说是一个基于JAVAEE架构的中间件，WebLogic是用于开发、集成、部署和管理大型分布式Web应用、网络应用和数据库应用的Java应用服务器。将Java的动态功能和Java Enterprise标准的安全性引入大型网络应用的开发、集成、部署和管理之中
@@ -77,6 +78,7 @@ if __name__ == "__main__":
     T3Exploit(ip, port, payload)
 ```
 ![](https://img-blog.csdnimg.cn/0986b5e9618d4cbf829d8c8b4c6f6ae0.png)
+
 调用栈如下：
 ```
 readObject:60, InboundMsgAbbrev (weblogic.rjvm)
@@ -103,6 +105,7 @@ T3协议接收过来的数据会在`weblogic.rjvm.InboundMsgAbbrev#readObject`�
 
 往后执行，可以发现这几个方法是对数据流进行分块处理，将序列化部分分块，依次解析每块的类，然后去执行
 ![](https://img-blog.csdnimg.cn/aab8f63b728449d28474adc2ca4fb8cd.png)
+
 可以看到调用父类的`ObjectInputStream#resolveClass`方法获取对应类名，并没有做出任何的安全过滤操作，所以能够实例化任意类
 
 官方对此的修复方案是加入黑名单：
@@ -418,8 +421,10 @@ run:119, ExecuteThread (weblogic.kernel)
 直接跟进到`LimitFilter`的`toString()`方法
 可以看到当`m_comparator`是继承于ValueExtractor接口的类时，会尝试调用`m_comparator.extract()`方法
 ![](https://img-blog.csdnimg.cn/aa2a3799754940d4a2c3ada90f96147c.png)
+
 跟进到ChainedExtractor的extract方法
 ![](https://img-blog.csdnimg.cn/042a5e69f21e4317b40b66aab73d87e7.png)
+
 可以看到类型为`ReflectionExtractor`，继续跟进它的extract方法
 ![](https://img-blog.csdnimg.cn/b8b1f3c8766f4b7cbe89bd4ea0456c9c.png)
 
@@ -543,6 +548,7 @@ run:119, ExecuteThread (weblogic.kernel)
 
 看到this.getExtractors()方法，我们可以通过反射控制m_aExtrator属性
 ![](https://img-blog.csdnimg.cn/97d0252d50d0436ba4a89cf13166993b.png)
+
 并且MultiExtractor没有自己的compare，该类使用的是父类AbstractExtractor的compare函数
 ![](https://img-blog.csdnimg.cn/8d208eaf64c94e179bb43f133c0d082a.png)
 
@@ -891,8 +897,6 @@ else if (workAdapter instanceof ServletRequestImpl) {
 ![](https://img-blog.csdnimg.cn/7926aa9cea71455b854a80316d548e90.png)
 
 需要具体代码的话解密一下就可以了。其实不仅可以使用`weblogic.utils.Hex`，也可以使用`sun.misc.BASE64Decoder`或者`weblogic.utils.encoders.BASE64Decoder`，都是可以正常回显的
-
-
 
 
 参考文章：

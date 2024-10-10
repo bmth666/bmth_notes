@@ -1,14 +1,15 @@
 title: Weblogic未授权远程命令执行漏洞
 author: bmth
 tags:
-  - weblogic
+  - Weblogic
 categories:
-  - java
+  - 漏洞分析
 top_img: 'https://img-blog.csdnimg.cn/4693090433804755a57b4e2240e63479.png'
 cover: 'https://img-blog.csdnimg.cn/4693090433804755a57b4e2240e63479.png'
 date: 2023-01-30 01:49:32
 ---
 ![](https://img-blog.csdnimg.cn/4693090433804755a57b4e2240e63479.png)
+
 CVE-2020-14882 允许未授权的用户绕过管理控制台的权限验证访问后台，CVE-2020-14883 允许后台任意用户通过 HTTP 协议执行任意命令。使用这两个漏洞组成的利用链，可通过一个 GET 请求在远程 Weblogic 服务器上以未授权的任意用户身份执行命令
 
 影响版本：
@@ -32,6 +33,7 @@ CVE-2020-14882 允许未授权的用户绕过管理控制台的权限验证访�
 该漏洞的触发是在 console 组件，而console对应着webapp服务，配置文件为`wlserver/server/lib/consoleapp/webapp/WEB-INF/web.xml`
 正常登录后会访问一个`console.portal`，那么在web.xml中看一下相关的路由情况
 ![](https://img-blog.csdnimg.cn/dcd043bbb38047f3be6cad2811e57873.png)
+
 可以看到对应的servlet为AppManagerServlet
 ![](https://img-blog.csdnimg.cn/86022d47ef95426a9e864eb476f3231b.png)
 
@@ -47,11 +49,13 @@ CVE-2020-14882 允许未授权的用户绕过管理控制台的权限验证访�
 
 继续跟进可以看到调用`weblogic.servlet.security.internal.WebAppSecurity#checkAccess()`进行权限的校验
 ![](https://img-blog.csdnimg.cn/f4c7a91a1dca4fd280f3dd65a9e21ec1.png)
+
 第一次请求的时候checkAllResources为false，于是调用getConstraint方法
 ![](https://img-blog.csdnimg.cn/51deba2226024fd884685aee8b6d89e0.png)
 
 跟进`weblogic.servlet.security.internal.WebAppSecurityWLS#getConstraint()`
 ![](https://img-blog.csdnimg.cn/f3b58b81a3434574af29c0c50aceab9e.png)
+
 这里会比较我们的relURI是否匹配我们matchMap中的路径，并判断rcForAllMethods和rcForOneMethod是否为null
 ![](https://img-blog.csdnimg.cn/55fcac29b2934980b5ee5d3ce65dbb0c.png)
 
@@ -91,7 +95,6 @@ private static final String[] IllegalUrl = new String[]{";", "%252E%252E", "%2E%
 /console/css/%252e%252e%252fconsole.portal
 /console/css/%25%32%65%25%32%65%25%32%66console.portal
 /console/css/%25%32%65%25%32%65%25%32%66consolejndi.portal
-
 ```
 
 
@@ -182,6 +185,7 @@ _nfpb=true&_pageLabel=&handle=com.bea.core.repackaged.springframework.context.su
 可以看到成功回显
 ### 漏洞修复
 ![](https://img-blog.csdnimg.cn/77c474f1a63142b9baa284913e2a0986.png)
+
 修复方式是判断这个className是否为Handle类的子类
 
 参考：
